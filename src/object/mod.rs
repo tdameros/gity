@@ -87,3 +87,13 @@ pub trait Object {
         Ok(file_path)
     }
 }
+
+pub trait TreeObject: Object {
+    fn clone_box_tree(&self) -> Box<dyn TreeObject>;
+}
+
+impl Clone for Box<dyn TreeObject> {
+    fn clone(&self) -> Box<dyn TreeObject> {
+        self.clone_box_tree()
+    }
+}

@@ -1,19 +1,21 @@
-use super::{Object, ObjectType};
+use super::{Object, ObjectType, TreeObject};
 use hex;
 
+#[derive(Clone)]
 pub struct Tree {
     name: String,
     hash: String,
-    objects: Vec<Box<dyn Object>>,
+    objects: Vec<Box<dyn TreeObject>>,
 }
 
 impl Tree {
-    pub fn new(name: String, objects: Vec<Box<dyn Object>>) -> Self {
+    pub fn new(name: String, objects: Vec<Box<dyn TreeObject>>) -> Self {
         let mut obj = Self {
             name,
             hash: String::new(),
-            objects,
+            objects: objects.clone(),
         };
+        obj.objects.sort_by(|a, b| a.get_name().cmp(b.get_name()));
         obj.hash = obj.hash();
         obj
     }
@@ -52,5 +54,50 @@ impl Object for Tree {
 
     fn get_name(&self) -> &String {
         &self.name
+    }
+}
+
+impl TreeObject for Tree {
+    fn clone_box_tree(&self) -> Box<dyn TreeObject> {
+        Box::new(self.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::object::blob::Blob;
+    use crate::object::tree::Tree;
+    use crate::object::Object;
+
+    #[test]
+    fn hello_world_tree() {
+        let blob = Blob::new("file.txt".to_string(), "hello world".to_string());
+        let tree = Tree::new("mydir".to_string(), vec![Box::new(blob)]);
+        assert_eq!(tree.get_hash(), "6c6a54b9bfc715ac30dae119b85cdad3df15e5b2");
+    }
+
+    #[test]
+    fn multiple_blobs() {
+        let blob1 = Blob::new("file.txt".to_string(), "hello world".to_string());
+        let blob2 = Blob::new("file2.txt".to_string(), "hello world2".to_string());
+        let tree = Tree::new("mydir".to_string(), vec![Box::new(blob1), Box::new(blob2)]);
+        assert_eq!(tree.get_hash(), "f1c42276c6120e25f284e73392108dc75d670fe7");
+    }
+
+    #[test]
+    fn multiple_blobs_reverse() {
+        let blob1 = Blob::new("file.txt".to_string(), "hello world".to_string());
+        let blob2 = Blob::new("file2.txt".to_string(), "hello world2".to_string());
+        let tree = Tree::new("mydir".to_string(), vec![Box::new(blob2), Box::new(blob1)]);
+        assert_eq!(tree.get_hash(), "f1c42276c6120e25f284e73392108dc75d670fe7");
+    }
+
+    #[test]
+    fn subdirectories() {
+        let blob1 = Blob::new("number.txt".to_string(), "123".to_string());
+        let blob2 = Blob::new("hello.py".to_string(), "hello python".to_string());
+        let subdir = Tree::new("subdir".to_string(), vec![Box::new(blob2)]);
+        let tree = Tree::new("mydir".to_string(), vec![Box::new(subdir), Box::new(blob1)]);
+        assert_eq!(tree.get_hash(), "f2221879a80b2554253e773fe73f22b91ba53caa");
     }
 }
