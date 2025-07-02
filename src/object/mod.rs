@@ -36,6 +36,8 @@ pub trait Object {
     fn get_hash(&self) -> &String;
     fn get_name(&self) -> &String;
 
+    fn clone_box(&self) -> Box<dyn Object>;
+
     fn hash(&mut self) -> String {
         use sha1::{Digest, Sha1};
         let mut hasher = Sha1::new();
@@ -85,5 +87,11 @@ pub trait Object {
         let file_path = dir_path.join(&hash[2..]);
         std::fs::write(&file_path, self.get_compress_content())?;
         Ok(file_path)
+    }
+}
+
+impl Clone for Box<dyn Object> {
+    fn clone(&self) -> Box<dyn Object> {
+        self.clone_box()
     }
 }
