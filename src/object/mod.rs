@@ -36,8 +36,6 @@ pub trait Object {
     fn get_hash(&self) -> &String;
     fn get_name(&self) -> &String;
 
-    fn clone_box(&self) -> Box<dyn Object>;
-
     fn hash(&mut self) -> String {
         use sha1::{Digest, Sha1};
         let mut hasher = Sha1::new();
@@ -90,8 +88,12 @@ pub trait Object {
     }
 }
 
-impl Clone for Box<dyn Object> {
-    fn clone(&self) -> Box<dyn Object> {
-        self.clone_box()
+pub trait TreeObject: Object {
+    fn clone_box_tree(&self) -> Box<dyn TreeObject>;
+}
+
+impl Clone for Box<dyn TreeObject> {
+    fn clone(&self) -> Box<dyn TreeObject> {
+        self.clone_box_tree()
     }
 }

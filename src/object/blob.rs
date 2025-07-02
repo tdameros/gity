@@ -1,4 +1,4 @@
-use super::{Object, ObjectType};
+use super::{Object, ObjectType, TreeObject};
 
 #[derive(Clone)]
 pub struct Blob {
@@ -35,8 +35,10 @@ impl Object for Blob {
     fn get_name(&self) -> &String {
         &self.name
     }
+}
 
-    fn clone_box(&self) -> Box<dyn Object> {
+impl TreeObject for Blob {
+    fn clone_box_tree(&self) -> Box<dyn TreeObject> {
         Box::new(self.clone())
     }
 }

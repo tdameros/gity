@@ -1,15 +1,15 @@
-use super::{Object, ObjectType};
+use super::{Object, ObjectType, TreeObject};
 use hex;
 
 #[derive(Clone)]
 pub struct Tree {
     name: String,
     hash: String,
-    objects: Vec<Box<dyn Object>>,
+    objects: Vec<Box<dyn TreeObject>>,
 }
 
 impl Tree {
-    pub fn new(name: String, objects: Vec<Box<dyn Object>>) -> Self {
+    pub fn new(name: String, objects: Vec<Box<dyn TreeObject>>) -> Self {
         let mut obj = Self {
             name,
             hash: String::new(),
@@ -55,8 +55,10 @@ impl Object for Tree {
     fn get_name(&self) -> &String {
         &self.name
     }
+}
 
-    fn clone_box(&self) -> Box<dyn Object> {
+impl TreeObject for Tree {
+    fn clone_box_tree(&self) -> Box<dyn TreeObject> {
         Box::new(self.clone())
     }
 }
