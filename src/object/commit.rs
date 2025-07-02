@@ -6,8 +6,7 @@ pub struct Commit {
     hash: String,
 }
 
-impl Commit {
-}
+impl Commit {}
 
 impl Object for Commit {
     fn get_type(&self) -> ObjectType {
