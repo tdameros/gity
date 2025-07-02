@@ -1,0 +1,8 @@
+# Project
+.gity/
+
+# IDE
+.idea/
+
+# Rust
+/target
