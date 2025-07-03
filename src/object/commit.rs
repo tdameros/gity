@@ -1,12 +1,12 @@
 use crate::config::user::User;
 use crate::object::tree::Tree;
 use crate::object::{Object, ObjectType};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, FixedOffset};
 
 #[derive(Clone)]
 pub struct Signature {
     pub user: User,
-    pub date_time: DateTime<Local>,
+    pub date_time: DateTime<FixedOffset>,
 }
 
 #[derive(Clone)]
@@ -64,7 +64,7 @@ impl Commit {
         .concat()
     }
 
-    pub fn get_formatted_utc_offset(&self, date: &DateTime<Local>) -> String {
+    pub fn get_formatted_utc_offset(&self, date: &DateTime<FixedOffset>) -> String {
         let offset_seconds = date.offset().utc_minus_local();
         let total_seconds = -offset_seconds;
         let hours = total_seconds / 3600;
@@ -101,7 +101,7 @@ mod tests {
     fn get_local_datetime_from_unix_timestamp(
         unix_timestamp: i64,
         offset_in_hours: i32,
-    ) -> DateTime<Local> {
+    ) -> DateTime<FixedOffset> {
         let offset = FixedOffset::east_opt(offset_in_hours * 3600).unwrap();
         offset.timestamp_opt(unix_timestamp, 0).unwrap().into()
     }
