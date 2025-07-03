@@ -7,6 +7,6 @@ edition = "2021"
 clap = { version = "4.5.38", features = ["derive"] }
 sha-1 = "0.10.1"
 once_cell = "1.21.3"
-flate2 = "1.1.1"
 hex = "0.4.3"
 libz-sys = "1.1.22"
+chrono = "0.4.41"
