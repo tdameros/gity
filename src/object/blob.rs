@@ -8,6 +8,7 @@ pub struct Blob {
 }
 
 impl Blob {
+    #[allow(dead_code)]
     pub fn new(name: String, content: String) -> Self {
         let mut obj = Self {
             name,

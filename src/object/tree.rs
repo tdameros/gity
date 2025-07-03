@@ -9,6 +9,7 @@ pub struct Tree {
 }
 
 impl Tree {
+    #[allow(dead_code)]
     pub fn new(name: String, objects: Vec<Box<dyn TreeObject>>) -> Self {
         let mut obj = Self {
             name,
