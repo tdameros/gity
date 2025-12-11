@@ -8,8 +8,8 @@ use crate::object::commit::Commit;
 use crate::object::tree::Tree;
 use crate::utils::hash::hash_sha1_hexa;
 use crate::utils::zlib;
-use std::path::{Path, PathBuf};
 use std::any::Any;
+use std::path::{Path, PathBuf};
 
 pub enum ObjectType {
     Blob,
@@ -44,7 +44,6 @@ pub trait Object {
     fn get_name(&self) -> &String;
     fn set_name(&mut self, name: String);
     fn update_hash(&mut self);
-
 
     fn hash(&mut self) -> String {
         hash_sha1_hexa(self.get_raw_data())

@@ -1,5 +1,5 @@
-use std::any::Any;
 use super::{Object, ObjectType, TreeObject};
+use std::any::Any;
 
 #[derive(Clone)]
 pub struct Blob {
@@ -52,7 +52,9 @@ impl TreeObject for Blob {
     fn clone_box_tree(&self) -> Box<dyn TreeObject> {
         Box::new(self.clone())
     }
-    fn as_any(&self) -> &dyn Any { self }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl TryFrom<Vec<u8>> for Blob {

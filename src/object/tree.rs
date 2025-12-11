@@ -1,7 +1,7 @@
-use std::any::Any;
 use super::{Object, ObjectType, TreeObject};
 use crate::context::object::get_object;
 use hex;
+use std::any::Any;
 
 #[derive(Clone)]
 pub struct Tree {
@@ -77,7 +77,9 @@ impl TreeObject for Tree {
     fn clone_box_tree(&self) -> Box<dyn TreeObject> {
         Box::new(self.clone())
     }
-    fn as_any(&self) -> &dyn Any { self }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl TryFrom<Vec<u8>> for Tree {

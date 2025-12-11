@@ -1,10 +1,9 @@
 use clap::Args;
 
 use crate::context::object::get_object;
-use crate::object::{EObject, Object, TreeObject};
 use crate::object::blob::Blob;
 use crate::object::tree::Tree;
-
+use crate::object::{EObject, Object, TreeObject};
 
 #[derive(Args)]
 pub struct CatFileArgs {

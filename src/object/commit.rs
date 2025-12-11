@@ -173,7 +173,11 @@ impl TryFrom<String> for Signature {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let split_spaces = value.trim().split(' ').collect::<Vec<&str>>();
         let username = split_spaces.get(0).ok_or("Missing username")?;
-        let email = split_spaces.get(1).ok_or("Missing email")?.trim_start_matches("<").trim_end_matches("<");
+        let email = split_spaces
+            .get(1)
+            .ok_or("Missing email")?
+            .trim_start_matches("<")
+            .trim_end_matches(">");
         let date_time = split_spaces.get(2).ok_or("Missing datetime")?;
         let date_time_offset = split_spaces.get(3).ok_or("Missing datetime offset")?;
 
