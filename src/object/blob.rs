@@ -1,3 +1,4 @@
+use std::any::Any;
 use super::{Object, ObjectType, TreeObject};
 
 #[derive(Clone)]
@@ -36,11 +37,29 @@ impl Object for Blob {
     fn get_name(&self) -> &String {
         &self.name
     }
+
+    fn update_hash(&mut self) {
+        self.hash = self.hash();
+    }
+
+    fn set_name(&mut self, name: String) {
+        self.name = name;
+        self.update_hash();
+    }
 }
 
 impl TreeObject for Blob {
     fn clone_box_tree(&self) -> Box<dyn TreeObject> {
         Box::new(self.clone())
+    }
+    fn as_any(&self) -> &dyn Any { self }
+}
+
+impl TryFrom<Vec<u8>> for Blob {
+    type Error = String;
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let content = String::from_utf8(value).map_err(|e| e.to_string())?;
+        Ok(Blob::new("".to_string(), content))
     }
 }
 

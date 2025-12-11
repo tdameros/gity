@@ -1,4 +1,6 @@
+use std::any::Any;
 use super::{Object, ObjectType, TreeObject};
+use crate::context::object::get_object;
 use hex;
 
 #[derive(Clone)]
@@ -38,6 +40,10 @@ impl Tree {
         }
         content
     }
+
+    pub fn get_objects(&self) -> &Vec<Box<dyn TreeObject>> {
+        &self.objects
+    }
 }
 
 impl Object for Tree {
@@ -56,11 +62,59 @@ impl Object for Tree {
     fn get_name(&self) -> &String {
         &self.name
     }
+
+    fn update_hash(&mut self) {
+        self.hash = self.hash();
+    }
+
+    fn set_name(&mut self, name: String) {
+        self.name = name;
+        self.update_hash();
+    }
 }
 
 impl TreeObject for Tree {
     fn clone_box_tree(&self) -> Box<dyn TreeObject> {
         Box::new(self.clone())
+    }
+    fn as_any(&self) -> &dyn Any { self }
+}
+
+impl TryFrom<Vec<u8>> for Tree {
+    type Error = String;
+    fn try_from(content: Vec<u8>) -> Result<Self, Self::Error> {
+        let mut index = 0;
+        println!("content: {:?}", content);
+        let mut objects: Vec<Box<dyn TreeObject>> = Vec::new();
+        while index < content.len() {
+            if let Some(space_index) = content[index..].iter().position(|&b| b == b' ') {
+                let mode = String::from_utf8_lossy(&content[index..index + space_index]);
+                println!("mode: {}", mode);
+                index = index + space_index + 1;
+                println!("index: {}", index);
+                if let Some(zero_index) = content[index..].iter().position(|&b| b == b'\0') {
+                    let rel_zero_index = index + zero_index;
+                    let name = String::from_utf8_lossy(&content[index..rel_zero_index]);
+                    println!("name: {}", name);
+                    index = rel_zero_index + 1;
+                    let hash = &content[index..index + 20];
+                    let encoded_hash = hex::encode(hash);
+                    println!("hash: {}", encoded_hash);
+                    let object = get_object(encoded_hash);
+                    if let Some(mut object) = object {
+                        if let Some(tree_object) = object.as_tree_object_mut() {
+                            tree_object.set_name(name.to_string());
+                            objects.push(tree_object.clone_box_tree());
+                        }
+                    }
+                    index += 21;
+                }
+            } else {
+                println!("Missing space");
+                break;
+            }
+        }
+        Ok(Tree::new("".to_string(), objects))
     }
 }
 

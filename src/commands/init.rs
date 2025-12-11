@@ -1,5 +1,5 @@
-use std::path;
 use clap::Args;
+use std::path;
 
 use crate::config::{GITY_DIR_NAME, OBJECTS_PATH};
 use std::path::Path;
@@ -12,6 +12,9 @@ pub fn run(_args: &InitArgs) {
     if !gity_path.exists() {
         std::fs::create_dir(gity_path).unwrap();
         std::fs::create_dir(OBJECTS_PATH.clone()).unwrap();
-        println!("Initialized empty Gity repository in {}", path::absolute(gity_path).unwrap().display());
+        println!(
+            "Initialized empty Gity repository in {}",
+            path::absolute(gity_path).unwrap().display()
+        );
     }
 }

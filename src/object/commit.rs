@@ -1,9 +1,10 @@
 use crate::config::user::User;
 use crate::object::tree::Tree;
-use crate::object::{Object, ObjectType};
+use crate::object::{EObject, Object, ObjectType};
+use crate::utils::datetime::{get_datetime_from_unix_timestamp, parse_offset};
 use chrono::{DateTime, FixedOffset};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Signature {
     pub user: User,
     pub date_time: DateTime<FixedOffset>,
@@ -11,11 +12,11 @@ pub struct Signature {
 
 #[derive(Clone)]
 pub struct Commit {
-    author: Signature,
+    pub author: Signature,
     committer: Signature,
     hash: String,
-    content: String,
-    tree: Tree,
+    pub content: String,
+    pub tree: Tree,
     parent: Option<Box<Commit>>,
 }
 
@@ -34,7 +35,7 @@ impl Commit {
         obj
     }
 
-    fn get_raw_content(&self) -> Vec<u8> {
+    pub fn get_raw_content(&self) -> Vec<u8> {
         let tree_row = format!("tree {}\n", self.tree.get_hash());
         let author_row = format!(
             "author {} <{}> {} {}\n",
@@ -89,6 +90,108 @@ impl Object for Commit {
 
     fn get_name(&self) -> &String {
         &self.content
+    }
+
+    fn update_hash(&mut self) {
+        self.hash = self.hash();
+    }
+
+    fn set_name(&mut self, name: String) {
+        self.content = name;
+        self.update_hash();
+    }
+}
+
+use crate::context::object::get_object;
+use crate::object::Blob;
+use chrono::TimeZone;
+
+fn get_local_datetime_from_unix_timestamp(
+    unix_timestamp: i64,
+    offset_in_hours: i32,
+) -> DateTime<FixedOffset> {
+    let offset = FixedOffset::east_opt(offset_in_hours * 3600).unwrap();
+    offset.timestamp_opt(unix_timestamp, 0).unwrap()
+}
+
+impl TryFrom<Vec<u8>> for Commit {
+    type Error = String;
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        let content = String::from_utf8(value).map_err(|e| e.to_string())?;
+        let mut lines = content.lines();
+
+        let mut tree: Option<Tree> = None;
+        let mut author: Option<Signature> = None;
+        let mut committer: Option<Signature> = None;
+
+        // for line in lines {
+        while let Some(line) = lines.next() {
+            if line.is_empty() {
+                break;
+            }
+            if line.starts_with("tree ") {
+                let tree_hash = String::from(line["tree ".len()..].trim());
+                let parsed_tree = get_object(tree_hash);
+                match parsed_tree {
+                    Some(EObject::Tree(t)) => {
+                        tree = Some(t);
+                    }
+                    _ => {}
+                }
+            } else if line.starts_with("committer ") {
+                let committer_line = String::from(line["committer ".len()..].trim());
+                let parsed_committer = Signature::try_from(committer_line);
+                match parsed_committer {
+                    Ok(parsed_committer) => {
+                        committer = Some(parsed_committer);
+                    }
+                    _ => {}
+                }
+            } else if line.starts_with("author ") {
+                let author_line = String::from(line["author ".len()..].trim());
+                let parsed_author = Signature::try_from(author_line);
+                match parsed_author {
+                    Ok(parsed_author) => {
+                        author = Some(parsed_author);
+                    }
+                    _ => {}
+                }
+            }
+        }
+        let message = lines.collect::<Vec<_>>().join("\n");
+
+        let tree = tree.ok_or("Missing tree")?;
+        let author = author.ok_or("Missing author")?;
+        let committer = committer.ok_or("Missing committer")?;
+
+        Ok(Commit::new(message, &tree, author, None))
+    }
+}
+
+impl TryFrom<String> for Signature {
+    type Error = String;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let split_spaces = value.trim().split(' ').collect::<Vec<&str>>();
+        let username = split_spaces.get(0).ok_or("Missing username")?;
+        let email = split_spaces.get(1).ok_or("Missing email")?.trim_start_matches("<").trim_end_matches("<");
+        let date_time = split_spaces.get(2).ok_or("Missing datetime")?;
+        let date_time_offset = split_spaces.get(3).ok_or("Missing datetime offset")?;
+
+        let user = User {
+            username: username.to_string(),
+            email: email.to_string(),
+        };
+        let unix_timestamp: i64 = date_time.parse().expect("t");
+        let datetime_offset = parse_offset(date_time_offset);
+        let signature_datetime = get_datetime_from_unix_timestamp(
+            unix_timestamp,
+            Some(datetime_offset.0),
+            Some(datetime_offset.1),
+        );
+        Ok(Signature {
+            user: user,
+            date_time: signature_datetime,
+        })
     }
 }
 
