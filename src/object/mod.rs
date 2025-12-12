@@ -2,7 +2,6 @@ pub mod blob;
 pub mod commit;
 pub mod tree;
 
-use crate::context::object::get_object;
 use crate::object::blob::Blob;
 use crate::object::commit::Commit;
 use crate::object::tree::Tree;
@@ -94,14 +93,6 @@ pub enum EObject {
 }
 
 impl EObject {
-    pub fn as_tree_object(&self) -> Option<&dyn TreeObject> {
-        match self {
-            EObject::Blob(blob) => Some(blob),
-            EObject::Tree(tree) => Some(tree),
-            _ => None,
-        }
-    }
-
     pub fn as_tree_object_mut(&mut self) -> Option<&mut dyn TreeObject> {
         match self {
             EObject::Blob(blob) => Some(blob),
@@ -144,38 +135,4 @@ impl TryFrom<Vec<u8>> for EObject {
             _ => Err(format!("Unknown object type: {}", type_str)),
         }
     }
-}
-
-fn build_tree(content: &[u8]) -> Vec<Box<dyn TreeObject>> {
-    let mut index = 0;
-    println!("content: {:?}", content);
-    let mut objects: Vec<Box<dyn TreeObject>> = Vec::new();
-    while index < content.len() {
-        if let Some(space_index) = content[index..].iter().position(|&b| b == b' ') {
-            let mode = String::from_utf8_lossy(&content[index..index + space_index]);
-            println!("mode: {}", mode);
-            index = index + space_index + 1;
-            println!("index: {}", index);
-            if let Some(zero_index) = content[index..].iter().position(|&b| b == b'\0') {
-                let rel_zero_index = index + zero_index;
-                let name = String::from_utf8_lossy(&content[index..rel_zero_index]);
-                println!("name: {}", name);
-                index = rel_zero_index + 1;
-                let hash = &content[index..index + 20];
-                let encoded_hash = hex::encode(hash);
-                println!("hash: {}", encoded_hash);
-                let object = get_object(encoded_hash);
-                if let Some(object) = object {
-                    if let Some(tree_object) = object.as_tree_object() {
-                        objects.push(tree_object.clone_box_tree());
-                    }
-                }
-                index += 21;
-            }
-        } else {
-            println!("Missing space");
-            break;
-        }
-    }
-    objects
 }

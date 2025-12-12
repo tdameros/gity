@@ -103,16 +103,6 @@ impl Object for Commit {
 }
 
 use crate::context::object::get_object;
-use crate::object::Blob;
-use chrono::TimeZone;
-
-fn get_local_datetime_from_unix_timestamp(
-    unix_timestamp: i64,
-    offset_in_hours: i32,
-) -> DateTime<FixedOffset> {
-    let offset = FixedOffset::east_opt(offset_in_hours * 3600).unwrap();
-    offset.timestamp_opt(unix_timestamp, 0).unwrap()
-}
 
 impl TryFrom<Vec<u8>> for Commit {
     type Error = String;
@@ -124,37 +114,42 @@ impl TryFrom<Vec<u8>> for Commit {
         let mut author: Option<Signature> = None;
         let mut committer: Option<Signature> = None;
 
-        // for line in lines {
-        while let Some(line) = lines.next() {
+        for line in lines.by_ref() {
             if line.is_empty() {
                 break;
             }
-            if line.starts_with("tree ") {
-                let tree_hash = String::from(line["tree ".len()..].trim());
+            if let Some(tree_line) = line.strip_prefix("tree ") {
+                let tree_hash = tree_line.trim().to_string();
                 let parsed_tree = get_object(tree_hash);
                 match parsed_tree {
                     Some(EObject::Tree(t)) => {
                         tree = Some(t);
                     }
-                    _ => {}
+                    _ => {
+                        return Err("tree not found".to_string());
+                    }
                 }
-            } else if line.starts_with("committer ") {
-                let committer_line = String::from(line["committer ".len()..].trim());
+            } else if let Some(committer_line) = line.strip_prefix("committer ") {
+                let committer_line = committer_line.trim().to_string();
                 let parsed_committer = Signature::try_from(committer_line);
                 match parsed_committer {
                     Ok(parsed_committer) => {
                         committer = Some(parsed_committer);
                     }
-                    _ => {}
+                    _ => {
+                        return Err("committer not found".to_string());
+                    }
                 }
-            } else if line.starts_with("author ") {
-                let author_line = String::from(line["author ".len()..].trim());
+            } else if let Some(author_line) = line.strip_prefix("author ") {
+                let author_line = author_line.trim().to_string();
                 let parsed_author = Signature::try_from(author_line);
                 match parsed_author {
                     Ok(parsed_author) => {
                         author = Some(parsed_author);
                     }
-                    _ => {}
+                    _ => {
+                        return Err("author not found".to_string());
+                    }
                 }
             }
         }
@@ -162,7 +157,7 @@ impl TryFrom<Vec<u8>> for Commit {
 
         let tree = tree.ok_or("Missing tree")?;
         let author = author.ok_or("Missing author")?;
-        let committer = committer.ok_or("Missing committer")?;
+        let _committer = committer.ok_or("Missing committer")?;
 
         Ok(Commit::new(message, &tree, author, None))
     }
@@ -172,7 +167,7 @@ impl TryFrom<String> for Signature {
     type Error = String;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let split_spaces = value.trim().split(' ').collect::<Vec<&str>>();
-        let username = split_spaces.get(0).ok_or("Missing username")?;
+        let username = split_spaces.first().ok_or("Missing username")?;
         let email = split_spaces
             .get(1)
             .ok_or("Missing email")?
@@ -193,7 +188,7 @@ impl TryFrom<String> for Signature {
             Some(datetime_offset.1),
         );
         Ok(Signature {
-            user: user,
+            user,
             date_time: signature_datetime,
         })
     }
